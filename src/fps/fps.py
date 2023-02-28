@@ -2,23 +2,30 @@
 import numpy as np
 import sparse
 from scipy.spatial.distance import pdist, squareform
-from dscribe.descriptors import SOAP
+from distancecribe.descriptors import SOAP
 
 
-def calculate_soap(data):
-    species = ["H", "C"]
-    r_cut = 6.0
-    n_max = 8
-    l_max = 8
+def calculate_soap(
+    data,
+    species: list = ["H", "C"],
+    r_cut: float = 6.0,
+    n_max: int = 8,
+    l_max: int = 8,
+    periodic: bool = True,
+    average: str = "inner",
+    sparse: bool = True,
+    ):
+    """calculate soap data, very redundant, only changed the default values
+    """
 
     soap = SOAP(
         species=species,
         r_cut=r_cut,
         n_max=n_max,
         l_max=l_max,
-        periodic=True,
-        average='inner',
-        sparse = True)
+        periodic=periodic,
+        average=average,
+        sparse = sparse)
 
     soap_data = soap.create(data)
     return soap_data
@@ -28,8 +35,16 @@ def get_DM(file: str, test_size: int) -> np.array:
     """create distance matrix from soap data
     
     Parameters:
-    file: .npz file containing soap data
-    test_size: how many of the last trajectories should be ignored
+    ----------
+    file: str
+      .npz file containing soap data
+    test_size: int
+        how many of the last trajectories should be ignored
+
+    Returns:
+    --------
+    DM: np.array
+        distance matrix
     """
     
     soap_data = load_soap(file, test_size)    
@@ -37,7 +52,9 @@ def get_DM(file: str, test_size: int) -> np.array:
     return DM
 
 
-def Distance_matrix(data):
+def Distance_matrix(data: np.array) -> np.array:
+    """np.sqrt(2)*squareform(pdist(data, 'cosine'))
+    """
     # Use cosine distance acording to 
     # https://pubs.rsc.org/en/content/articlelanding/2016/CP/C6CP00415F
     
@@ -45,12 +62,20 @@ def Distance_matrix(data):
     return DM
 
 
-def load_soap(file: str, test_size: int):
+def load_soap(file: str, test_size: int) -> np.array:
     """load soap data from a file
     
     Parameters:
-    file: .npz file containing soap data
-    test_size: how many of the last trajectories should be ignored   
+    ----------
+    file: str 
+        .npz file containing soap data
+    test_size: int
+        how many of the last trajectories should be ignored   
+
+    Returns:
+    --------
+    dense: np.array
+        soap data
     """
 
     soap_data = sparse.load_npz(file)
@@ -63,7 +88,7 @@ def load_soap(file: str, test_size: int):
     return dense 
 
 
-def getGreedyPerm(DM: np.array):
+def getGreedyPerm(DM: np.array) -> tuple(np.array, np.array):
     """
     A Naive O(N^2) algorithm to do furthest points sampling
     (Copied from:
@@ -75,9 +100,10 @@ def getGreedyPerm(DM: np.array):
         An NxN distance matrix for points
     Return
     ------
-    tuple (list, list) 
-        (permutation (N-length array of indices), 
-        lambdas (N-length array of insertion radii))
+    perm : ndarray (N,)
+        The permutation of points
+    lambdas : ndarray (N,)
+        the distance between each point and the previous point
     """
     
     N = DM.shape[0]
@@ -86,12 +112,19 @@ def getGreedyPerm(DM: np.array):
     #first point in the permutation, but could be random
     perm = np.zeros(N, dtype=np.int64)
     lambdas = np.zeros(N)
-    ds = DM[0, :]
+    
+    # distances from the fisrt point to all other points
+    distance = DM[0, :]
+
     
     for i in range(1, N):
-        idx = np.argmax(ds)
+        # furthest point 
+        idx = np.argmax(distance)
         perm[i] = idx
-        lambdas[i] = ds[idx]
-        ds = np.minimum(ds, DM[idx, :])
+        lambdas[i] = distance[idx]
+
+        # update the distances so each point shows the distance
+        # to the nearest point in the current set
+        distance = np.minimum(distance, DM[idx, :])
     
     return (perm, lambdas)
