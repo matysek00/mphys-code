@@ -43,7 +43,60 @@ def iterative_md(init_geo: str,
                 remove_logs: bool = True,
                 factor_blow_up = .9 # end the simulation when distance between two atoms gets below this value times distance pair
                 ) -> None:
-    
+    """Run a MD simulation with extrapolation check
+
+    Parameters:
+    ------------
+    init_geo : str
+        initial geometry
+    fn_models : list
+        list of model files
+    Temperature : float
+        temperature of the simulation
+    nmax : int, optional
+        maximum number of iterations, by default 100
+    n_steps : int, optional
+        number of steps to simulate each iterations, by default 1000
+    n_replicas : int, optional
+        number of replicas to simulate, by default 1
+    time_constant : float, optional
+        time constant for the thermostat, by default 100
+    time_step : float, optional
+        time step for the simulation, by default .5 fs
+    cutoff : float, optional
+        cutoff for the simulation, by default 4.0 A 
+    buffer_size : int, optional
+        how many geometries to hold in  memory before writing them on disc, by default 10
+    logging_interval : int, optional
+        how often to store data into the temporary log file, by default 1
+    store_interval : int, optional
+        how often to store geometires into fn_store, by every 100th
+    tresh_store : float, optional
+        geometries with average forcre std per atom above this value will counted as extrapolation, by default .9
+    tresh_stop : float, optional
+        if std above this value is reached the MD will stop, by default 1
+    fn_store : str, optional
+        where to store intermidiate trajectory, by default 'traj.db'
+    fn_extrapol : str, optional
+        where to store extrapolation values, by default 'extrapol.db'
+    device : str, optional
+        device to run the simulation on, by default 'cpu'
+    chk_file : str, optional
+        where to store checkpoints, by default 'simulation.chk' 
+    fn_ener : str, optional
+        where to store energies, by default 'energy.npy'
+    fn_energy_var : str, optional
+        where to store energy variance, by default 'var_energy.npy'
+    fn_force_var : str, optional
+        where to store force variance, by default 'var_force.npy'
+    fn_temp : str, optional
+        where to store temperature, by default 'temperature.npy'
+    remove_logs : bool, optional
+        whether to remove the temporary log files, by default True
+    factor_blow_up : float, optional
+        end the simulation when distance between two atoms gets below this value times distance pair, by default .9
+    """
+ 
     # print the input for reproducibility 
     print(locals())
     
@@ -114,7 +167,41 @@ def finalize_md(fn_store: str,
             tresh_store: float = .9,
             remove_logs: bool = True,
             factor_blow_up = .9
-            ) -> tuple:
+            ) -> tuple(float, bool):
+    """Finalize the MD simulation
+
+    Parameters:
+    ------------
+    fn_store : str
+        where to store intermidiate trajectory
+    log_file : str
+        log file of the simulation
+    fn_ener : str, optional
+        where to store energies, by default 'energy.npy'
+    fn_energy_var : str, optional
+        where to store energy variance, by default 'var_energy.npy'
+    fn_force_var : str, optional
+        where to store force variance, by default 'var_force.npy'
+    fn_temp : str, optional
+        where to store temperature, by default 'temperature.npy'
+    fn_extrapol : str, optional
+        where to store extrapolation values, by default 'extrapol.db'
+    interval : int, optional
+        how often to store geometires into fn_store, by every 100th
+    tresh_store : float, optional
+        geometries with average forcre std per atom above this value will counted as extrapolation, by default .9
+    remove_logs : bool, optional
+        whether to remove the log file of md simulaiton, by default True
+    factor_blow_up : float, optional
+        end the simulation when distance between two atoms gets below this value times distance pair, by default .9
+
+    Returns:
+    ---------
+    max_force_std : float
+        maximum force std per atom during the simulation
+    end : bool
+        whether to end the simulation
+    """
 
     # store all the data into different files
     store_traj(fn_log=log_file, 
@@ -177,7 +264,20 @@ def force_std(data, tradeoff: float = 8.1) -> float:
 
 
 def check_blow_ups(geometry: Atoms, factor: float = 1) -> bool:
+    """Check if the atoms are too close to each other
 
+    Parameters:
+    ------------
+    geometry : Atoms
+        geometry to check
+    factor : float, optional
+        factor to multiply the limit pair distance by, by default 1
+
+    Returns:
+    ---------
+    bool
+        whether the atoms are too close
+    """
     global distance_pairs
     ana = Analysis(geometry)
     blow_up = 0

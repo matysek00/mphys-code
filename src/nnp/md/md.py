@@ -30,6 +30,42 @@ def run_md_single(atoms: list,
                 buffer_size: int = 10, 
                 logging_interval: int = 100, 
                 ) -> spk.md.Simulator :
+    """Run a MD simulation
+
+    Parameters:
+    ------------
+    atoms : list
+        initilal configuration of the system
+    fn_models : list
+        list of model files
+    log_file : str
+        where to log
+    Temperature : float
+        temperature of the simulation
+    cutoff : float
+        cutoff for the simulation
+    n_steps : int
+        number of steps to simulate
+    n_replicas : int
+        number of replicas to simulate
+    time_constant : float
+        time constant for the thermostat
+    time_step : float
+        time step for the simulation
+    device : str
+        device to run the simulation on
+    chk_file : str
+        where to store the checkpoint
+    buffer_size : int
+        how long to store the log in memory
+    logging_interval : int
+        how often to log
+
+    Returns:
+    --------
+    md_simulator : spk.md.Simulator
+        the simulator object
+    """
     
     # print the input for reproducibility 
     print(locals())
@@ -70,7 +106,26 @@ def store_traj(fn_log: str,
             fn_force_var: str = None, 
             fn_energy_var: str = None,
             interval: int = 100) -> None:
-    
+    """Store the trajectory and the properties
+
+    Parameters:
+    -----------
+    fn_log : str
+        log file to read from
+    fn_traj : str
+        trajectory file to write to
+    fn_ener : str
+        whet tore store the energy
+    fn_temp : str
+        where to store the temperature
+    fn_force_var : str
+        where to store the force variance
+    fn_energy_var : str
+        where to store the energy variance
+    interval : int
+        how often to store the trajectory
+    """
+
     
     # load data 
     traj, temperatures, energy, force_var, energy_var = load_data(
@@ -87,7 +142,38 @@ def store_traj(fn_log: str,
         store_var(energy_var, fn_energy_var, False)
 
 
-def load_data(fn_log, interval, load_force_var, load_energy_var):
+def load_data(
+        fn_log: str,
+        interval: int,
+        load_force_var: bool,
+        load_energy_var: bool) -> tuple(list, np.array, np.array, np.array, np.array):
+    """Load the data from the log file
+
+    Parameters:
+    -----------
+    fn_log : str
+        log file to read from
+    interval : int
+        interval between read structures
+    load_force_var : bool
+        whether to load the force variance
+    load_energy_var : bool
+        whether to load the energy variance
+
+    Returns:
+    --------
+    traj : list
+        trajectory
+    temperatures : np.array
+        temperature
+    energy : np.array
+        energy
+    forces_var : np.array
+        force variance
+    energy_var : np.array   
+        energy variance
+    """
+
     data = HDF5Loader(fn_log)
     
     # rewrite_data
@@ -107,19 +193,46 @@ def load_data(fn_log, interval, load_force_var, load_energy_var):
 
 
 def store_var(new_var: np.array, fn_var: str, dim2: bool) -> None: 
-    
+    """Store the variance
+
+    Parameters:
+    -----------
+    new_var : np.array
+        variance to store
+    fn_var : str
+        where to store the variance
+    dim2 : bool
+        is the variance 2D
+    """
+    # reshape the data if they are 2D
     new_var_shaped = new_var
     if dim2:
         new_var_shaped = new_var.reshape(new_var.shape[0], -1)
     
+    # add to the existing data if it exists
     var = new_var_shaped    
     if os.path.exists(fn_var):   
         var = np.concatenate([np.load(fn_var), new_var_shaped])
 
+    # store the data
     np.save(fn_var, var)
 
 
 def hdf5_to_ase(data, idx_structure: int) -> Atoms:
+    """Convert the data from the hdf5 file to an ase Atoms object
+
+    Parameters:
+    -----------
+    data : HDF5Loader
+        data to convert
+    idx_structure : int
+        index of the structure to convert
+
+    Returns:
+    --------
+    atoms : Atoms
+        the converted structure
+    """
     
     species = data.get_property('_atomic_numbers', True)
     cell = data.get_property('_cell', False)[0]*_conversions['position']

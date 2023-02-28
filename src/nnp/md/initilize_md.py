@@ -30,12 +30,16 @@ def get_hooks(
     Returns: 
     simulation_hooks: list of shnetpack hooks
     """
-            
+
+    # Create the Langevin thermostat        
     langevin = spkhooks.LangevinThermostat(Temperature, time_constant)
-    COM_motion = spkhooks.RemoveCOMMotion(every_n_steps=1,
+    
+    # remove center of mass motion
+    com_motion = spkhooks.RemoveCOMMotion(every_n_steps=1,
                                         remove_rotation=False, 
                                         wrap_positions=False)
 
+    # Create the file logger
     data_streams = [
         spkhooks.callback_hooks.MoleculeStream(store_velocities=True),
         spkhooks.callback_hooks.PropertyStream(),
@@ -51,53 +55,18 @@ def get_hooks(
     # Create the checkpoint logger
     checkpoint = spkhooks.callback_hooks.Checkpoint(chk_file, every_n_steps=100)
     
+    # Put it all together
     simulation_hooks = [
         langevin,
         file_logger,
         checkpoint,
-        COM_motion
+        com_motion
     ]
     
     return simulation_hooks
 
 
-def get_calculator_old(
-                cutoff: float,
-                fn_models: list,
-                device: str = 'cpu'
-                ) -> SchNetPackEnsembleCalculator:
-    """Create calculator for MD. 
-
-    Parameters:
-    cutoff (float): model cutoff
-    fn_models (list): list of model paths 
-    device (str): cpu or cuda
-
-    Returns:
-    md_calculator: Schentpack calculator
-    """
-
-    md_models = [torch.load(fn_mod, map_location=device).to(device) for fn_mod in fn_models]
-
-    for model in md_models:
-        model.requires_stress = False
-        model.output_modules[0].stress = None
-
-    md_calculator = SchNetPackEnsembleCalculator(
-        md_models,
-        required_properties=['energy', 'forces'],
-        force_handle='forces',
-        position_conversion='A',
-        force_conversion='eV/A',
-        neighbor_list=TorchNeighborList, 
-        # ASENeighborList would be more appropriate but the 
-        # memory keeps increasing during MD
-        cutoff=cutoff
-    )
     
-    return md_calculator
-    
-
 def get_calculator(
                 cutoff: float,
                 fn_models: list,
@@ -114,7 +83,8 @@ def get_calculator(
     md_calculator: Schentpack calculator
     """
     cutoff_shell = 2.0
-
+    
+    # create neighbor list
     neighbor_list = NeighborListMD(
         cutoff,
         cutoff_shell,
@@ -122,6 +92,7 @@ def get_calculator(
     )
 
     if isinstance(fn_models, list):
+        # get ensemble calculator
         # TODO: try to parallelize the ensemble calculator
         md_calculator = SchNetPackEnsembleCalculator(
             fn_models,
@@ -134,6 +105,7 @@ def get_calculator(
             script_model = False)
     
     else:
+        # get single model calculator
         md_calculator = SchNetPackCalculator(
             fn_models,
             'forces',
@@ -166,20 +138,22 @@ def get_system(
 
     md_system = spk.md.System()
 
+    # load atoms into md system
     md_system.load_molecules(atoms, 
         n_replicas,
         position_unit_input="Angstrom"
         )
     
+    # set velocities if they exist
     velocities_set = atoms.get_velocities().any()
 
     if Temperature != None and not velocities_set:
+        # Initialize velocities
         md_initializer = spk.md.initial_conditions.MaxwellBoltzmannInit(
             Temperature,
             remove_translation=True,
             remove_rotation=True)
 
-        # Initialize momenta of the system
         md_initializer.initialize_system(md_system)
     
     return md_system
