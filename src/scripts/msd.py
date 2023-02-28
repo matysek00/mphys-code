@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys 
-sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/my_code/src')
+sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/mphys-code/src')
 
 import numpy as np
 import matplotlib.pyplot as plt
