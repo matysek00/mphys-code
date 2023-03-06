@@ -40,16 +40,13 @@ def test_model(fn_ref, dir_model, outfile):
     models = [get_calculator(fn_mod) for fn_mod in fn_models]
 
     # Load reference data
-    if not fn_ref is list:
-        fn_ref = [fn_ref]
-
     ref_traj = []
     for fil in fn_ref:
         ref_traj += read(fil, ':')
     
     # get number of atoms
     n_atoms = np.array(
-        [atoms.get_number_of_atoms() for atoms in ref_traj])
+        [atoms.get__global_number_of_atoms() for atoms in ref_traj])
 
     # Get energies and forces from schnet
     data_schnet  = [get_schnet_energies(atoms, models) for atoms in ref_traj] 
