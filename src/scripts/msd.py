@@ -10,12 +10,14 @@ from ase.io import read
 
 import nnp
 import argparse
+from schnetpack.md.data import HDF5Loader
+
 
 def main(fn_traj, fn_image, cm_frame=False, time_step=.05):
     fig, ax = plt.subplots(1)
     
-    plot_MSD(fn_traj, 'C', ax, cm_frame=cm_frame, time_step=time_step, label='C MSD')
-    plot_MSD(fn_traj, 'H', ax, cm_frame=cm_frame, time_step=time_step, label='H MSD')
+    plot_MSD(fn_traj, 6, ax, cm_frame=cm_frame, time_step=time_step, label='C MSD')
+    plot_MSD(fn_traj, 1, ax, cm_frame=cm_frame, time_step=time_step, label='H MSD')
     
     ax.set_ylabel('MSD [$\AA^2$]')
     ax.set_xlabel('t [ps]')
@@ -25,7 +27,7 @@ def main(fn_traj, fn_image, cm_frame=False, time_step=.05):
 
 
 def plot_MSD(
-        fn_traj: str, 
+        fn_data: str, 
         symbol: str, 
         ax: plt.axes, 
         time_step: float = .05,
@@ -41,11 +43,11 @@ def plot_MSD(
        **kwargs: additional arguments for ax.plot()
     """
 
-    traj = read(fn_traj, ':')
-    n_steps = len(traj)
+    data = data = HDF5Loader(fn_data)
+    n_steps = data.entries
     
     # time dependetn MSD
-    MSD = nnp.analysis.structure_descriptors._get_MSD(symbol, traj, cm_frame)
+    MSD = nnp.analysis.structure_descriptors.get_MSD(symbol, data, cm_frame)
     time = np.linspace(0, n_steps, n_steps)*time_step
     
     ax.plot(time, MSD, **kwargs)
@@ -55,10 +57,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Plot MSD of a trajectory'
     )
-    parser.add_argument('fn_traj', type=str, help='Trajectory file')
+    parser.add_argument('fn_data', type=str, help='Trajectory file')
     parser.add_argument('fn_image', type=str, help='Output image file')
     parser.add_argument('-c', '--cm_frame', action='store_true', help='Center of mass frame')
     parser.add_argument('-t', '--time_step', type=float, default=.05, help='Time step in ps')
 
     args = parser.parse_args()
-    main(args.fn_traj, args.fn_image, args.cm_frame, args.time_step)
+    main(args.fn_data, args.fn_image, args.cm_frame, args.time_step)

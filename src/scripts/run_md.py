@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys 
-sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/mphys_code/src')
+sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/mphys-code/src')
 
 import argparse
 from ase.io import read
@@ -13,7 +13,8 @@ def main(init_geo: str,
         n_steps: int = 10000,
         n_potentials: int = 4,
         exclude_models: list = [],
-        logging_interval: int = 20):
+        logging_interval: int = 20,
+        restart: bool = False):
     
     n_replicas = 1
 
@@ -30,8 +31,12 @@ def main(init_geo: str,
     
 
     device = 'cpu'
-
+    
     log_file = 'simulation.hdf5'
+    
+    if restart:
+        log_file = 'simulation_restart.hdf5'
+
     chk_file = 'simulation.chk'
     buffer_size = 1 # how many steps to store in memory before writing to disk
     
@@ -50,7 +55,8 @@ def main(init_geo: str,
         device=device,
         chk_file=chk_file,
         buffer_size=buffer_size,
-        logging_interval=logging_interval
+        logging_interval=logging_interval,
+        restart=restart
     )
     
 
@@ -72,8 +78,9 @@ if __name__ == '__main__':
                         help='Models to exclude (default: [])')
     parser.add_argument('-l', '--logging_interval', type=int, default=20,
                         help='Logging interval (default: 20)')
-    
+    parser.add_argument('-r', '--restart', action='store_true',
+                        help='Restart simulation (default: False)')    
     
     args = parser.parse_args()
-    main(args.init_geo, args.dir_models, args.Temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval)
+    main(args.init_geo, args.dir_models, args.Temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart)
 
