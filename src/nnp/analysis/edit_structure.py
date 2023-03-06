@@ -34,24 +34,39 @@ def displace_positions(
     return new_positions
 
 
-def get_cell_displacements(m: int) -> np.ndarray:
+def get_cell_displacements(
+        displacemt_amount: list = [2,2,2]
+        ) -> np.ndarray:
     """Return displacements of atoms in a unit cell when multiplying geometry.
 
     Parameters
     ----------
-    m : int
-        Number of times to multiply the geometry.
+    displacemt_amount : list, optional
+        Number of times to multiply the geometry in each direction.
+        The default is [2,2,2].
 
     Returns
     -------
     displacements : np.ndarray
         Displacements of atoms in a unit cell.
     """
-
+    
+    # Multiply unit cell by maximum increas in each direction
+    m = max(displacemt_amount)
     indecies = list(range(m))
-    # Create all possible combinations of displacements
-    displacements = np.array([item for item in itertools.product(indecies, repeat=3)])
 
+    # Create all possible combinations of displacements
+    displacements_all = np.array(
+        [item for item in itertools.product(indecies, repeat=3)])
+
+    # Remove displacements that are not in the desired directions
+    for i in range(3):
+        displacements_all[:,i] = np.where(
+            displacements_all[:,i] > displacemt_amount[i]-1, 
+            0, displacements_all[:,i]) 
+    
+    displacements = np.unique(displacements_all, axis=0)
+        
     return displacements
 
 
@@ -63,14 +78,19 @@ def multiply_geometry(geometry: ase.Atoms, m: int = 2):
     ----------
     geo : ase.Atoms
         Geometry of atoms.
-    m : int, optional
+    m : int or list, optional
         Number of times to multiply the geometry. The default is 2.
 
     Returns
     -------
     new_geo : ase.Atoms
-        New geometry of atoms, with 2x2x2 unit cell.
+        New geometry of atoms, with a bigger unit cell and more atoms.
     """
+
+    # make m a list
+    if m is int:
+        m = m*np.ones(3)
+    
     # Create new unit cell
     cell = geometry.cell
     new_cell = m*cell
@@ -94,6 +114,44 @@ def multiply_geometry(geometry: ase.Atoms, m: int = 2):
         symbols=new_symbols, positions=new_positions, 
         cell=new_cell, pbc=geometry.pbc)
     
+    return new_geo
+
+
+
+
+def merge_geometries(geos: tuple, direction: int = 2):
+    """
+    Merge geometries into one geometry.
+
+    Parameters
+    ----------
+    geos : tuple
+        two ase.Atoms objects.
+
+    Returns
+    -------
+    new_geo : ase.Atoms
+        New geometry of atoms, 
+        where the original are stuck on top of each other.
+    """
+    displacement_cell = np.zeros((1,3))
+    displacement_cell[:,direction] = 1
+
+    displacements = np.matmul(displacement_cell, geos[0].cell)
+    
+    new_positions = np.vstack(
+        [geos[0].positions,
+        displace_positions(displacements, geos[1].positions)])
+
+    new_symbols = geos[0].get_chemical_symbols() + geos[1].get_chemical_symbols()
+    new_cell = geos[0].cell
+    new_cell[direction] += geos[1].cell[direction]
+
+    new_geo = ase.Atoms(
+        symbols=new_symbols, positions=new_positions, 
+        cell=new_cell, pbc=geos[0].pbc
+    )
+
     return new_geo
 
 

@@ -5,6 +5,7 @@ import ase
 from scipy import sparse
 
 from collections import Counter
+from .misc import get_connectivity_matrix_wrapper
 
 def get_molecules(atoms: ase.Atom) -> Counter:
     """Count molecules in the structure.
@@ -19,16 +20,12 @@ def get_molecules(atoms: ase.Atom) -> Counter:
     """
 
     # get conectivity matix
-    cutoff = ase.neighborlist.natural_cutoffs(atoms)
-    nl = ase.neighborlist.NeighborList(
-    cutoff, self_interaction=False, bothways=True)
-    nl.update(atoms)
-    connect_matrix = nl.get_connectivity_matrix()
+    connect_matrix = get_connectivity_matrix_wrapper(atoms)
 
     # remove hydrogen-hydrogen bonds from the connectivity matrix
     # otherwise methanes will be merged into one molecule
     indx_H = np.where(atoms.numbers == 1)[0]
-    mask = np.ones(connect_matrix.shape, dtype=int)
+    mask = np.ones(connect_matrix.shape, dtype=bool)
     # TODO: geneailize this so it works even if hydrogens are not at the begining
     mask[:indx_H[-1], :indx_H[-1]] = False
     

@@ -1,11 +1,13 @@
 import numpy as np
 from collections import Counter
 
+from scipy.spatial import distance_matrix
+
 import ase 
 from ase.io import read
 from ase.geometry.analysis import Analysis
 
-from .misc import get_mask
+from .misc import get_mask, get_connectivity_matrix_wrapper
 
 def calculate_MSD(x1: np.array, 
                   x2: np.array, 
@@ -19,34 +21,32 @@ def calculate_MSD(x1: np.array,
     MSD = 3*np.mean((x1 - (x2 - r_cm))**2)
     return MSD
 
-def _get_MSD(symbol: str, traj: list, cm_frame: bool = False):
+def get_MSD(atomic_number: int, data, cm_frame: bool = False):
     
     # which atoms to use
-    mask = get_mask(symbol, traj[0]) 
-    
+    mask = data.get_property('_atomic_numbers', True) == atomic_number
+    all_positions = data.get_positions()[:, mask, :]
+
     # initial position
-    postion0 = traj[0].get_positions()[mask]
-    
-    r_cm = np.zeros((len(traj), 3))
+    postion0 = all_positions[0]
+    len_traj = all_positions.shape[0]
+
+    r_cm = 0
+    r_cm0 = 0
     
     if cm_frame:
         # initial center of mass
-        r_cm0 = traj[0].get_center_of_mass()
+        r_cm0 = np.mean(postion0, axis=0)
         postion0 -= r_cm0
 
         # center of mass in time
-        for i, atoms in enumerate(traj):
-            r_cm[i] = atoms.get_center_of_mass()
+        r_cm = np.mean(all_positions, axis=1)
+        all_positions -= r_cm[:, None, :]
         
 
     # get time dependetn MSD
-    MSD = np.empty(len(traj))
     
-    for i, atoms in enumerate(traj):
-        MSD[i] = calculate_MSD(
-            postion0,
-            atoms.get_positions()[mask],
-            r_cm[i])
+    MSD = 3*np.mean((all_positions - postion0)**2,axis=(1,2))
     
     return MSD
 
@@ -138,3 +138,49 @@ def cn_in_time(fn_traj: str,
       all_coordination_numbers[i,:] = Coord_Num
 
    return all_coordination_numbers
+
+def structure_distance_matrix(atoms: ase.Atoms, 
+                              sym: tuple = None, 
+                              triangular: bool = True) -> np.array:
+    """Calculate distance matrix for a given structure.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        structure
+    sym : tuple, optional
+        tuple of atomic symbols to use, by default None (all atoms)
+        eg ('C', 'C') will retrurn only CC distances
+        ('C', 'H') will return only CH distances etc.
+    triangular : bool, optional
+        if True, only lower triangle of the matrix will be non infinite   
+    
+    Returns
+    -------
+    DM : np.array
+        distance matrix
+    """
+
+    posittions = atoms.positions
+    
+    mask_1 = np.ones(len(atoms), dtype=bool)
+    mask_2 = np.ones(len(atoms), dtype=bool)
+
+    if sym is not None:
+        # if sym is not None, only use atoms with given symbols
+        mask_1 = get_mask(sym[0], atoms)
+        mask_2 = get_mask(sym[1], atoms)
+
+    # calculate distance matrix
+    connect_matrix = get_connectivity_matrix_wrapper(atoms)
+    DM = get_distance_matrix(connect_matrix)
+    
+    if triangular:
+        # set redundant part of the matrix to zero, 
+        # only loweer triangle will remain nonzero
+        DM = np.tril(DM, k=-1)
+
+    # replace zeros with inf
+    DM = np.where(DM == 0, np.inf, DM)
+    
+    return DM

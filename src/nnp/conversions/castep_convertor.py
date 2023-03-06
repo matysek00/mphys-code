@@ -155,32 +155,33 @@ class Castep_MD_Convertor(Castep_Convertor):
     def read(self, pbc: bool = True) -> list:
         """Reads the file and returns a list of ase.Atoms objects.
         """
-
+        print(-1)
         traj = []
         cell = self.read_cell()
         i=0
 
         while not self.check_EOF():
+            print(0)
             cell_positions, symbols = self.read_positions()
             if self.check_EOF():
                 break
-
+            print(1)
             positions = [cell.dot(np.array(pos)) for pos in cell_positions]
             if self.check_EOF():
                 break
-
+            print(2)
             forces = self.read_forces()
             if self.check_EOF():
                 break
-
+            print(3)
             energy = self.read_energy()
             if self.check_EOF():
                 break
-
+            print(4)
             atoms = ase.Atoms(symbols = symbols, positions=positions, cell=cell)
             atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy, forces=forces)
             atoms.set_pbc((pbc, pbc, pbc))
-            
+            print(atoms)
             traj.append(atoms)     
             i+=1       
             
