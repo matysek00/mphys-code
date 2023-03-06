@@ -5,6 +5,8 @@ from ase import Atoms
 from ase.io import write
 from ase.calculators.singlepoint import SinglePointCalculator
 
+import torch 
+
 import schnetpack as spk
 from schnetpack.md.data import HDF5Loader
 from schnetpack import units as spk_units
@@ -28,7 +30,8 @@ def run_md_single(atoms: list,
                 device: str = 'cpu', 
                 chk_file: str = 'simulation.chk', 
                 buffer_size: int = 10, 
-                logging_interval: int = 100, 
+                logging_interval: int = 100,
+                restart: bool = False, 
                 ) -> spk.md.Simulator :
     """Run a MD simulation
 
@@ -94,8 +97,14 @@ def run_md_single(atoms: list,
         )
     
     # simulate
+    if restart:
+        checkpoint = torch.load(chk_file)
+        md_simulator.restart_simulation(checkpoint)
+        n_steps -= md_simulator.step
+    
+    md_simulator = md_simulator.to(device)
     md_simulator.simulate(n_steps)
-
+    
     return md_simulator
 
 
@@ -146,7 +155,7 @@ def load_data(
         fn_log: str,
         interval: int,
         load_force_var: bool,
-        load_energy_var: bool) -> tuple(list, np.array, np.array, np.array, np.array):
+        load_energy_var: bool) -> tuple:
     """Load the data from the log file
 
     Parameters:
@@ -177,7 +186,7 @@ def load_data(
     data = HDF5Loader(fn_log)
     
     # rewrite_data
-    traj = [hdf5_to_ase(data, i) for i in range(0,data.entries, interval)]
+    traj = hdf5_to_ase(data, interval)
     temperatures = data.get_temperature()
     energy = data.get_property('energy', False)
     
@@ -218,7 +227,7 @@ def store_var(new_var: np.array, fn_var: str, dim2: bool) -> None:
     np.save(fn_var, var)
 
 
-def hdf5_to_ase(data, idx_structure: int) -> Atoms:
+def hdf5_to_ase(data, interval: int) -> Atoms:
     """Convert the data from the hdf5 file to an ase Atoms object
 
     Parameters:
@@ -234,14 +243,13 @@ def hdf5_to_ase(data, idx_structure: int) -> Atoms:
         the converted structure
     """
     
-    species = data.get_property('_atomic_numbers', True)
-    cell = data.get_property('_cell', False)[0]*_conversions['position']
-    positions = data.get_property('_positions', True)[idx_structure]*_conversions['position']
-    velocities  = data.get_property('velocities', True)[idx_structure]*_conversions['position']
-    energy  = data.get_property('energy', False)[idx_structure]*_conversions['energy']
-    forces  = data.get_property('forces', True)[idx_structure]*_conversions['energy']/_conversions['position']
-    atoms = Atoms(symbols = species, positions=positions, cell=cell, velocities = velocities)
-    atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy, forces=forces)
-    atoms.set_pbc((True, True, True))
+    all_atoms = data.convert_to_atoms()[::interval] 
+    energy  = data.get_property('energy', False)[::interval]*_conversions['energy']
+    forces  = data.get_property('forces', True)[::interval]*_conversions['energy']/_conversions['position']
     
-    return atoms
+    for idx, atoms in enumerate(all_atoms):
+        atoms.calc = SinglePointCalculator(
+            atoms=atoms, energy=energy[idx], forces=forces[idx])
+        atoms.set_pbc((True, True, True))
+    
+    return all_atoms

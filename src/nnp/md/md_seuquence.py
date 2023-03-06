@@ -167,7 +167,7 @@ def finalize_md(fn_store: str,
             tresh_store: float = .9,
             remove_logs: bool = True,
             factor_blow_up = .9
-            ) -> tuple(float, bool):
+            ) -> tuple:
     """Finalize the MD simulation
 
     Parameters:

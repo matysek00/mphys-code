@@ -53,7 +53,7 @@ def get_hooks(
     )
 
     # Create the checkpoint logger
-    checkpoint = spkhooks.callback_hooks.Checkpoint(chk_file, every_n_steps=100)
+    checkpoint = spkhooks.callback_hooks.Checkpoint(chk_file, every_n_steps=logging_interval)
     
     # Put it all together
     simulation_hooks = [
