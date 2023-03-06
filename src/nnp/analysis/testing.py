@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 import ase
 from ase.io import read
 
-def get_calculator(fn_model: str) -> spk.interfaces.SpkCalculator:
+def get_calculator(fn_model: str, cutoff: float = 4.0) -> spk.interfaces.SpkCalculator:
     """Get calculator for a given model.
     
     Parameters:
         fn_model (str): path to model
+        cutoff (float): cutoff for the calculator
 
     Returns:
         calculator (spk.interfaces.SpkCalculator): calculator
@@ -19,12 +20,13 @@ def get_calculator(fn_model: str) -> spk.interfaces.SpkCalculator:
 
     calulator = spk.interfaces.SpkCalculator(
         model_file = fn_model,
-        neighbor_list=trn.ASENeighborList(cutoff=4.0),
+        neighbor_list=trn.ASENeighborList(cutoff=cutoff),
         energy_key = 'energy',
         forces_key = 'forces',
         energy_unit ='eV',
         position_unit='Ang'
     )
+    
     return calulator
 
 
@@ -43,8 +45,9 @@ def get_schent_energy(
     """
     atoms.set_calculator(calculator)
     energy = atoms.get_potential_energy()
-    return energy
-
+    forces = atoms.get_forces()
+    
+    return energy, forces
 
 def get_schnet_energies(atoms: ase.Atoms,
     calculators: list
@@ -59,9 +62,11 @@ def get_schnet_energies(atoms: ase.Atoms,
         energies (np.array): energies of the structure
     """
     energies = np.zeros(len(calculators))
+    forces = np.zeros((len(calculators), len(atoms), 3))
     for i, calculator in enumerate(calculators):
-        energies[i] = get_schent_energy(atoms, calculator)
-    return energies
+        energies[i], forces[i] = get_schent_energy(atoms, calculator) 
+    
+    return energies, forces
 
 
 def seperation_energy(
