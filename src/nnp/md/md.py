@@ -63,6 +63,8 @@ def run_md_single(atoms: list,
         how long to store the log in memory
     logging_interval : int
         how often to log
+    restart : bool
+        whether to restart the simulation
 
     Returns:
     --------
@@ -100,6 +102,8 @@ def run_md_single(atoms: list,
     if restart:
         checkpoint = torch.load(chk_file)
         md_simulator.restart_simulation(checkpoint)
+
+        # reduce the number of steps
         n_steps -= md_simulator.step
     
     md_simulator = md_simulator.to(device)
