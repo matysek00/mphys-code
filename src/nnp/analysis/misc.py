@@ -1,6 +1,8 @@
 import numpy as np
 import ase
 
+import itertools
+
 def get_mask(symbol: str, atoms: ase.Atoms) -> np.array:
     """np.array([at == symbol for at in atoms.get_chemical_symbols()])
     """

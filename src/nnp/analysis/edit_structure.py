@@ -1,7 +1,6 @@
 import numpy as np
 import ase 
 
-import itertools
 from .misc import get_cell_displacements, displace_positions
 
 
