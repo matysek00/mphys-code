@@ -46,7 +46,7 @@ def test_model(fn_ref, dir_model, outfile):
     
     # get number of atoms
     n_atoms = np.array(
-        [atoms.get__global_number_of_atoms() for atoms in ref_traj])
+        [atoms.get_global_number_of_atoms() for atoms in ref_traj])
 
     # Get energies and forces from schnet
     data_schnet  = [get_schnet_energies(atoms, models) for atoms in ref_traj] 
@@ -73,17 +73,17 @@ def test_model(fn_ref, dir_model, outfile):
 
     ax[0].set_xlabel('Reference energy (eV/atom)')
     ax[0].set_ylabel('Schnet energy (eV/atom)')
-    ax[1].set_xlabel('Reference force (eV/A)')
-    ax[1].set_ylabel('Schnet force (eV/A)')
+    ax[1].set_xlabel('Reference force (eV/$\AA$)')
+    ax[1].set_ylabel('Schnet force (eV/$\AA$)')
 
     plt.savefig(outfile, dpi=300)
 
     # Calculate MAE
     mae_energy = np.mean(np.abs(energies_schnet_mean - ref_energies)/n_atoms)
-    mae_forces = np.mean(np.abs(forces_schnet_mean - ref_forces)/n_atoms)
+    mae_forces = np.mean(np.abs(forces_schnet_mean - ref_forces)/n_atoms[:,None,None])
 
-    print('MAE energy: {:.3f} meV/atom'.format(mae_energy*1000))
-    print('MAE forces: {:.3f} meV/$\AA$/atom'.format(mae_forces*1000))
+    print(r'MAE energy: {:.3f} meV/atom'.format(mae_energy*1000))
+    print(r'MAE forces: {:.3f} meV/$\AA$/atom'.format(mae_forces*1000))
 
 
 if __name__ == '__main__':
