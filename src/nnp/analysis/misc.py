@@ -48,7 +48,8 @@ def displace_positions(
     Returns
     -------
     new_positions : np.ndarray
-        New positions of atoms.
+        New positions of atoms shaped (natoms*ncells, 3). 
+        N_atoms rows corresponds to one image of the 
     """
 
     n_atoms = len(positions)
