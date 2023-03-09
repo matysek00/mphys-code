@@ -68,7 +68,7 @@ if __name__ == '__main__':
                         help='Initial geometry')
     parser.add_argument('dir_models', type=str, 
                         help='Directory with models, or model filename if single model is used.')
-    parser.add_argument('Temperature', type=float, 
+    parser.add_argument('-t', '--temperature', type=float, default=None,
                         help='Temperature')
     parser.add_argument('-n', '--n_steps', type=int, default=10000, 
                         help='Number of steps (default: 10000)')

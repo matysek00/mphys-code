@@ -12,7 +12,7 @@ from .paralle_ensemble_calculator import ParallelSchNetPackEnsembleCalculator
 def get_hooks(
             log_file: str, 
             chk_file: str, 
-            Temperature: float, 
+            Temperature: float = None, 
             time_constant: float = .5,
             logging_interval: int = 100, 
             buffer_size: int = 10
@@ -22,7 +22,7 @@ def get_hooks(
     Parameters:
     log_file (str): where to log 
     chk_file (str): where to store checkpoint
-    Temperature (float): temperatur of the simulation
+    Temperature (float): temperature of the simulation if none NVE is used
     time_constant (float): time constant for thermostat
     logging_interval(int): how often to log
     buffer_size (int): how long to store log in memory
@@ -31,13 +31,18 @@ def get_hooks(
     simulation_hooks: list of shnetpack hooks
     """
 
-    # Create the Langevin thermostat        
-    langevin = spkhooks.LangevinThermostat(Temperature, time_constant)
+    simulation_hooks = []
+
+    if Temperature != None:
+        # Create the Langevin thermostat        
+        langevin = spkhooks.LangevinThermostat(Temperature, time_constant)
+        simulation_hooks.append(langevin)
     
     # remove center of mass motion
     com_motion = spkhooks.RemoveCOMMotion(every_n_steps=1,
                                         remove_rotation=False, 
                                         wrap_positions=False)
+    simulation_hooks.append(com_motion)
 
     # Create the file logger
     data_streams = [
@@ -52,16 +57,11 @@ def get_hooks(
         every_n_steps = logging_interval
     )
 
+    simulation_hooks.append(file_logger)
+
     # Create the checkpoint logger
     checkpoint = spkhooks.callback_hooks.Checkpoint(chk_file, every_n_steps=logging_interval)
-    
-    # Put it all together
-    simulation_hooks = [
-        langevin,
-        file_logger,
-        checkpoint,
-        com_motion
-    ]
+    simulation_hooks.append(checkpoint)
     
     return simulation_hooks
 
