@@ -82,5 +82,5 @@ if __name__ == '__main__':
                         help='Restart simulation (default: False)')    
     
     args = parser.parse_args()
-    main(args.init_geo, args.dir_models, args.Temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart)
+    main(args.init_geo, args.dir_models, args.temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart)
 
