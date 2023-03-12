@@ -21,11 +21,14 @@ def calculate_MSD(x1: np.array,
     MSD = 3*np.mean((x1 - (x2 - r_cm))**2)
     return MSD
 
-def get_MSD(atomic_number: int, data, cm_frame: bool = False):
+def get_MSD(atomic_number: int,
+             data, 
+             cm_frame: bool = False, 
+             conversion: float = 1.):
     
     # which atoms to use
     mask = data.get_property('_atomic_numbers', True) == atomic_number
-    all_positions = data.get_positions()[:, mask, :]
+    all_positions = data.get_positions()[:, mask, :]*conversion
 
     # initial position
     postion0 = all_positions[0]
