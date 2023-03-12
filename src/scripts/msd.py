@@ -27,7 +27,7 @@ def main(fn_traj, fn_image, cm_frame=False, time_step=.05, conversion=10.):
 
 
 def plot_MSD(
-        fn_data: str, 
+        fn_data: list, 
         symbol: str, 
         ax: plt.axes, 
         time_step: float = .05,
@@ -44,12 +44,23 @@ def plot_MSD(
        **kwargs: additional arguments for ax.plot()
     """
 
-    data = data = HDF5Loader(fn_data)
-    n_steps = data.entries
-    
-    # time dependetn MSD
-    MSD = nnp.analysis.structure_descriptors.get_MSD(symbol, data, cm_frame, conversion)
-    time = np.linspace(0, n_steps, n_steps)*time_step
+    n_steps = [0]
+    MSD = []
+
+    # load data
+    for fn in fn_data:
+        data = HDF5Loader(fn)
+        n_steps.append(data.entries)
+        # time dependetn MSD
+        MSD.append(nnp.analysis.structure_descriptors.get_MSD(symbol, data, cm_frame, conversion))
+
+    total_steps = np.sum(n_steps)
+    MSD_tot = np.empty(total_steps)
+
+    for i in range(len(MSD)):
+        MSD_tot[n_steps[i]: n_steps[i+1]] = MSD[i]
+
+    time = np.linspace(0, total_steps, total_steps)*time_step
     
     ax.plot(time, MSD, **kwargs)
 
@@ -58,12 +69,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Plot MSD of a trajectory'
     )
-    parser.add_argument('fn_data', type=str, help='Trajectory file')
-    parser.add_argument('fn_image', type=str, help='Output image file')
+    parser.add_argument('fn_data', type=str, nargs='+', help='Trajectory files')
+    parser.add_argument('-o', '--outfile', type=str, help='Output image file')
     parser.add_argument('-c', '--cm_frame', action='store_true', help='Center of mass frame')
     parser.add_argument('-k', '--conversion', default=10., type=float, 
                         help='Conversion to Angstroms')
     parser.add_argument('-t', '--time_step', type=float, default=.05, help='Time step in ps')
 
     args = parser.parse_args()
-    main(args.fn_data, args.fn_image, args.cm_frame, args.time_step, args.conversion)
+    main(args.fn_data, args.outfile, args.cm_frame, args.time_step, args.conversion)
