@@ -26,7 +26,7 @@ def main(infile: str,
     outfile = outfile +'_' if outfile is not None else ''
 
     traj = read(infile, slice_at)
-    traj = edit_structure.multiply_trajectory(traj) if multiply else traj
+    traj = edit_structure.multiply_trajectory(traj, m=multiply) if multiply is not None else traj
 
     analyser = Analysis(traj[::interval])
 
@@ -55,8 +55,8 @@ if __name__ == '__main__':
                         help='The interval between points of the trajectory')    
     parser.add_argument('-o', '--output', type=str, default=None,
                         help='Output file name')
-    parser.add_argument('-m', '--multiply', action='store_true',
-                        help='Multiply uniti cell by 2 in each direction, to get a longer range')
+    parser.add_argument('-m', '--multiply', type=int, nargs='+', default=None,
+                        help='Multiply uniti cell by this number in each direction, to get a longer range')
     parser.add_argument('-s', '--slice_at', type = str, required=False, default=':',
         help='What range of structure to use, use python slicing')
     
