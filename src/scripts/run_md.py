@@ -14,7 +14,8 @@ def main(init_geo: str,
         n_potentials: int = 4,
         exclude_models: list = [],
         logging_interval: int = 20,
-        restart: bool = False):
+        restart: bool = False, 
+        soft_restart: bool = False):
     
     n_replicas = 1
 
@@ -56,7 +57,8 @@ def main(init_geo: str,
         chk_file=chk_file,
         buffer_size=buffer_size,
         logging_interval=logging_interval,
-        restart=restart
+        restart=restart,
+        soft_restart=soft_restart
     )
     
 
@@ -80,7 +82,8 @@ if __name__ == '__main__':
                         help='Logging interval (default: 20)')
     parser.add_argument('-r', '--restart', action='store_true',
                         help='Restart simulation (default: False)')    
+    parser.add_argument('-s', '--soft_restart', action='store_true',
+                        help='Soft restart simulation (default: False)')
     
     args = parser.parse_args()
-    main(args.init_geo, args.dir_models, args.temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart)
-
+    main(args.init_geo, args.dir_models, args.temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart, args.soft_restart)
