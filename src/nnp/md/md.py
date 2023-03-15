@@ -31,7 +31,8 @@ def run_md_single(atoms: list,
                 chk_file: str = 'simulation.chk', 
                 buffer_size: int = 10, 
                 logging_interval: int = 100,
-                restart: bool = False, 
+                restart: bool = False,
+                soft_restart: bool = False, 
                 ) -> spk.md.Simulator :
     """Run a MD simulation
 
@@ -65,6 +66,9 @@ def run_md_single(atoms: list,
         how often to log
     restart : bool
         whether to restart the simulation
+    soft_restart : bool
+        if restart is True, this will not enforce the same thermostat as 
+        the original simulation
 
     Returns:
     --------
@@ -101,7 +105,7 @@ def run_md_single(atoms: list,
     # simulate
     if restart:
         checkpoint = torch.load(chk_file)
-        md_simulator.restart_simulation(checkpoint)
+        md_simulator.restart_simulation(checkpoint, soft=soft_restart)
 
         # reduce the number of steps
         n_steps -= md_simulator.step

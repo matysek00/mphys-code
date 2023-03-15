@@ -15,7 +15,8 @@ def get_hooks(
             Temperature: float = None, 
             time_constant: float = .5,
             logging_interval: int = 100, 
-            buffer_size: int = 10
+            buffer_size: int = 10,
+            remove_com_motion: bool = True,
             ) -> list:
     """Create hooks for the simulation
     
@@ -26,6 +27,7 @@ def get_hooks(
     time_constant (float): time constant for thermostat
     logging_interval(int): how often to log
     buffer_size (int): how long to store log in memory
+    remove_com_motion (bool): remove center of mass motion
     
     Returns: 
     simulation_hooks: list of shnetpack hooks
@@ -38,11 +40,12 @@ def get_hooks(
         langevin = spkhooks.LangevinThermostat(Temperature, time_constant)
         simulation_hooks.append(langevin)
     
-    # remove center of mass motion
-    com_motion = spkhooks.RemoveCOMMotion(every_n_steps=1,
-                                        remove_rotation=False, 
-                                        wrap_positions=False)
-    simulation_hooks.append(com_motion)
+    if remove_com_motion:
+        # remove center of mass motion
+        com_motion = spkhooks.RemoveCOMMotion(every_n_steps=1,
+                                            remove_rotation=False, 
+                                            wrap_positions=False)
+        simulation_hooks.append(com_motion)
 
     # Create the file logger
     data_streams = [

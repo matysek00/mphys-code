@@ -236,14 +236,15 @@ def write_extrapol(fn_extrapol: str,
     data = HDF5Loader(log_file)
     
     # check where forces are above the treshold
-    idxs_structure = np.where(force_std(data) > tresh_store)[0]
+    idxs_structure = force_std(data) > tresh_store
 
     # create geometries
-    traj = [hdf5_to_ase(data, idx) for idx in idxs_structure]
+    traj_all = data.convert_to_atoms()
+    traj = [traj_all[i] for i in range(len(traj_all)) if idxs_structure[i]]
 
     # check for too short distances
     not_blown_up = [not check_blow_ups(t, 1) for t in traj]
-    print('!! Found {:d} extrapolations, {:d} are useful'.format(len(idxs_structure), sum(not_blown_up)))
+    print('!! Found {:d} extrapolations, {:d} are useful'.format(idxs_structure.sum(), sum(not_blown_up)))
 
     # not blown up 
     traj_good = list(compress(traj, not_blown_up)) 
