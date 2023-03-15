@@ -21,18 +21,84 @@ def calculate_MSD(x1: np.array,
     MSD = 3*np.mean((x1 - (x2 - r_cm))**2)
     return MSD
 
-def get_MSD(atomic_number: int,
-             data, 
-             cm_frame: bool = False, 
-             conversion: float = 1.):
+def get_msd_atoms(mask: str,
+                  traj: list, 
+                  cm_frame: bool = False):
+    """Returns MSD
+
+    Parameters
+    ----------
+    mask : str, or array
+        mask for the atoms to be used, if int, then it is the atomic number
+    traj : list
+        trajectory
+    cm_frame : bool, optional
+        if True, then the center of mass is subtracted from the positions, by default False
+
+    Returns
+    -------
+    MSD : np.array
+        time dependent MSD
+    """
     
     # which atoms to use
-    mask = data.get_property('_atomic_numbers', True) == atomic_number
-    all_positions = data.get_positions()[:, mask, :]*conversion
+    if isinstance(mask, str):
+        mask = get_mask(mask, traj[0])
+
+    r_0 = traj[0].get_positions()[mask]
+        
+    all_postitions = np.array([atoms.get_positions()[mask] for atoms in traj])
+    if cm_frame:
+        r_cm = np.array([atoms.get_center_of_mass() for atoms in traj])
+        all_postitions -= r_cm[:, None, :]
+
+    msd = 3*np.mean((all_postitions - r_0)**2, axis=(1,2))
+    return msd
+
+
+def get_msd(mask: int,
+             data: list, 
+             cm_frame: bool = False, 
+             conversion: float = 1.):
+    """Returns MSD
+
+    Parameters
+    ----------
+    mask : int, or array
+        mask for the atoms to be used, if int, then it is the atomic number
+    data : list
+        list of hdf5 dataloaders
+    cm_frame : bool, optional
+        if True, then the center of mass is subtracted from the positions, by default False
+    conversion : float, optional
+        conversion factor for the positions, by default 1.
+
+    Returns
+    -------
+    MSD : np.array
+        time dependent MSD
+    """
+    
+    # which atoms to use
+    if isinstance(mask, int):
+        mask = data[0].get_property('_atomic_numbers', True) == mask
+    
+    # number of steps
+    n_steps = [0] + [dat.entries for dat in data]
+    n_steps = np.cumsum(n_steps)
+    total_steps = n_steps[-1]
+
+    # get positions from all data files
+    all_positions = np.empty((total_steps, mask.sum(), 3))
+
+    for i in range(len(data)):
+        start = n_steps[i]
+        end = n_steps[i+1]
+
+        all_positions[start:end] = data[i].get_positions()[:, mask, :]*conversion
 
     # initial position
     postion0 = all_positions[0]
-    len_traj = all_positions.shape[0]
 
     r_cm = 0
     r_cm0 = 0
@@ -46,9 +112,7 @@ def get_MSD(atomic_number: int,
         r_cm = np.mean(all_positions, axis=1)
         all_positions -= r_cm[:, None, :]
         
-
     # get time dependetn MSD
-    
     MSD = 3*np.mean((all_positions - postion0)**2,axis=(1,2))
     
     return MSD
