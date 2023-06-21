@@ -22,9 +22,9 @@ def multiply_geometry(geometry: ase.Atoms, m: int = 2):
     """
 
     # make m a list
-    if m is int:
-        m = m*np.ones(3)
-    
+    if type(m) is int:
+        m = m*np.ones(3, dtype=int)
+        
     # Create new unit cell
     cell = geometry.cell
     new_cell = m*cell

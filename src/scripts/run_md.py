@@ -15,7 +15,9 @@ def main(init_geo: str,
         exclude_models: list = [],
         logging_interval: int = 20,
         restart: bool = False, 
-        soft_restart: bool = False):
+        soft_restart: bool = False,
+        rescale_velocities: bool = False,
+        init_temperature: float = None):
     
     n_replicas = 1
 
@@ -42,6 +44,7 @@ def main(init_geo: str,
     buffer_size = 1 # how many steps to store in memory before writing to disk
     
     atoms = read(init_geo, '0')
+    init_temperature = Temperature if init_temperature is None else init_temperature
 
     md_simulator = md.md.run_md_single(
         atoms = atoms,
@@ -58,7 +61,9 @@ def main(init_geo: str,
         buffer_size=buffer_size,
         logging_interval=logging_interval,
         restart=restart,
-        soft_restart=soft_restart
+        soft_restart=soft_restart,
+        rescale_velocities=rescale_velocities,
+        init_temperature=init_temperature
     )
     
 
@@ -84,6 +89,22 @@ if __name__ == '__main__':
                         help='Restart simulation (default: False)')    
     parser.add_argument('-s', '--soft_restart', action='store_true',
                         help='Soft restart simulation (default: False)')
+    parser.add_argument('-v', '--rescale_velocities', action='store_true',
+                        help='Rescale velocities to current temperature when restartin (default: False)')
+    parser.add_argument('-i', '--init_temperature', type=float, default=None,
+                        help='Initial temperature if none is given use temperature instead (default: None)')
+
     
     args = parser.parse_args()
-    main(args.init_geo, args.dir_models, args.temperature, args.n_steps, args.n_models, args.exclude_models, args.logging_interval, args.restart, args.soft_restart)
+    main(
+        args.init_geo, 
+        args.dir_models, 
+        args.temperature, 
+        args.n_steps, 
+        args.n_models, 
+        args.exclude_models, 
+        args.logging_interval, 
+        args.restart, 
+        args.soft_restart, 
+        args.rescale_velocities, 
+        args.init_temperature)

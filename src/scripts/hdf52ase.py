@@ -17,9 +17,13 @@ def convert(filnames: list,
             skip_initial: int = 0, 
             interval: int = 1,
             append: bool = False,
-            multiply: int = None):
+            multiply: int = None,
+            energy: bool = False):
     
     traj = []
+
+    if energy:
+        print('Sorry I didn\'t  implement energy yet')
 
     for filname in filnames:
         data = HDF5Loader(filname, skip_initial=skip_initial, load_properties=False)
@@ -46,6 +50,8 @@ if __name__ == '__main__':
                         help='Append to the output file instead of overwriting it.')
     parser.add_argument('-m','--multiply', type=int, required=False, default=None,
                         help='Multiply the trajectory by this number in each direction')
+    parser.add_argument('-e', '--energy', action='store_true',
+                        help='Include energy and forces in the output file.')
     
     args = parser.parse_args()
-    convert(args.infiles, args.outfile, args.skip_initial, args.frame_interval, args.append, args.multiply)
+    convert(args.infiles, args.outfile, args.skip_initial, args.frame_interval, args.append, args.multiply, args.energy)

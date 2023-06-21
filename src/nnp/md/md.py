@@ -32,8 +32,9 @@ def run_md_single(atoms: list,
                 buffer_size: int = 10, 
                 logging_interval: int = 100,
                 restart: bool = False,
-                soft_restart: bool = False, 
-                ) -> spk.md.Simulator :
+                soft_restart: bool = False,
+                rescale_velocities: bool = False, 
+                init_temperature: float = None) -> spk.md.Simulator :
     """Run a MD simulation
 
     Parameters:
@@ -69,6 +70,10 @@ def run_md_single(atoms: list,
     soft_restart : bool
         if restart is True, this will not enforce the same thermostat as 
         the original simulation
+    rescale_velocities : bool
+        if restart is True, this will rescale the velocities to current temperature
+    init_temperature : float
+        initial temperature of the simulation
 
     Returns:
     --------
@@ -80,7 +85,7 @@ def run_md_single(atoms: list,
     print(locals())
 
     # initialize simulation
-    md_system = get_system(atoms, n_replicas, Temperature, device)
+    md_system = get_system(atoms, n_replicas, init_temperature, device)
     md_calculator = get_calculator(cutoff, fn_models, device)
     md_integrator = spk.md.integrators.VelocityVerlet(time_step)
     
@@ -109,6 +114,10 @@ def run_md_single(atoms: list,
 
         # reduce the number of steps
         n_steps -= md_simulator.step
+        if rescale_velocities:
+            current_temperature = md_simulator.system.temperature.item()
+            md_simulator.system.momenta *= np.sqrt(init_temperature/current_temperature)
+
     
     md_simulator = md_simulator.to(device)
     md_simulator.simulate(n_steps)

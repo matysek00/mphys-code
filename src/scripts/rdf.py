@@ -53,7 +53,7 @@ if __name__ == '__main__':
                         help='The maximum distance to consider in the RDF')
     parser.add_argument('-i', '--interval', type=int, default=1,
                         help='The interval between points of the trajectory')    
-    parser.add_argument('-o', '--output', type=str, default=None,
+    parser.add_argument('-o', '--output', type=str,
                         help='Output file name')
     parser.add_argument('-m', '--multiply', type=int, nargs='+', default=None,
                         help='Multiply uniti cell by this number in each direction, to get a longer range')

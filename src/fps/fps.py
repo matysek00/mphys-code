@@ -2,7 +2,7 @@
 import numpy as np
 import sparse
 from scipy.spatial.distance import pdist, squareform
-from distancecribe.descriptors import SOAP
+from dscribe.descriptors import SOAP
 
 
 def calculate_soap(
@@ -15,7 +15,8 @@ def calculate_soap(
     average: str = "inner",
     sparse: bool = True,
     ):
-    """calculate soap data, very redundant, only changed the default values
+    """calculate soap data, very redundant, 
+    only changed the default values
     """
 
     soap = SOAP(
@@ -88,7 +89,7 @@ def load_soap(file: str, test_size: int) -> np.array:
     return dense 
 
 
-def getGreedyPerm(DM: np.array) -> tuple(np.array, np.array):
+def getGreedyPerm(DM: np.array) -> tuple:
     """
     A Naive O(N^2) algorithm to do furthest points sampling
     (Copied from:

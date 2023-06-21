@@ -11,7 +11,7 @@ class General_Convertor():
         units (str): units to be used in the file (metalic or atomic)
     """
     unit_sets = {
-        'metalic': {'energy': 'eV', 'position': 'A'},
+        'metalic': {'energy': 'eV', 'position': 'Ang'},
         'atomic': {'energy': 'Hartree', 'position': 'Bohr'}
         } 
 

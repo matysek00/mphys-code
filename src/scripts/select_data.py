@@ -12,7 +12,7 @@ font = {'family' : 'normal',
         'weight' : 'bold',
         'size'   : 22}
 
-def main(fil, fn_perm, outfile, distance):
+def main(fil, fn_perm, outfile, distance, n_structures):
     
     name = fil.split('/')[-1]
     name = name.split('.')[0]
@@ -20,11 +20,16 @@ def main(fil, fn_perm, outfile, distance):
 
     perm = np.load(fn_perm)
     lam = np.load(fn_lam)[1:]
-    #we are ignoring the first element because first distance is always zero
 
-    n = np.where(lam<distance)[0][0]
-    idx_selected = perm[:n].astype(int)
-    print('{}: {:d} geometries selcted.'.format(name, n))
+    if distance is not None:
+        # selection based on distance    
+        #we are ignoring the first element because first distance is always zero
+        n_structures = np.where(lam<distance)[0][0]    
+    
+    idx_selected = perm[:n_structures].astype(int)
+
+    print('{}: {:d} geometries selcted with {} maximum distance.'.format(
+        name, n_structures, lam[n_structures]))
 
     data = read(fil, ':{:d}'.format(len(perm)))     
     data_selected = [data[idx] for idx in idx_selected]
@@ -65,8 +70,19 @@ if __name__=='__main__':
     parser.add_argument('infile', type=str, help='Original data')
     parser.add_argument('permfile', type=str, help='.npy file with permutations')
     parser.add_argument('outfile', type=str)
-    parser.add_argument('distance', type = float,
+    parser.add_argument('-d', '--distance', type = float, required=False, default=None,
      help='What distance should be between point at the cuttof')
+    parser.add_argument('-n', '--nstructures', type=int, required=False, default=None,
+     help='How many structures to use. Either this or the distance parameter should be selected')
+
 
     args = parser.parse_args()
-    main(args.infile, args.permfile, args.outfile, args.distance)
+    selection_bad = ((args.distance is None and args.nstructures is None) or 
+                    (args.distance is not None and args.nstructures is not None))
+    
+    if selection_bad:
+        print('Please select either distance or the nstructures options, but not both')
+        parser.print_help()
+        exit()
+
+    main(args.infile, args.permfile, args.outfile, args.distance, args.nstructures)

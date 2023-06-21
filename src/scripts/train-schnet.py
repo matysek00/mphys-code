@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/mphys_code/src')
+sys.path.append('/storage/cmstore01/projects/Hydrocarbons/opt/mphys-code/src')
 
 from pytorch_lightning.strategies import DDPStrategy
 from nnp.training.training import * 
 import argparse
 
 
-def main(fn_db: str, epochs: int, activation: str, n_cpu_data: int, n_cpu_train: int, checkpoint: str = None):
+def main(fn_db: str, epochs: int, activation: str, n_cpu_data: int, n_cpu_train: int, cutoff: float, batch_size: int = 1, checkpoint: str = None):
     
     # TODO: Check if there is a better strategy 
     device = 'cpu'
@@ -20,8 +20,6 @@ def main(fn_db: str, epochs: int, activation: str, n_cpu_data: int, n_cpu_train:
     dir_nl_cache = 'nl_cache'
 
     # Data Settings
-    batch_size = 5 # how much data we load at a time 
-    cutoff = 4.0  # Environment cutoff
 
     ## Model Settings
     n_layers = 2  # Number of dense layers
@@ -86,6 +84,10 @@ if __name__ == '__main__':
         help='How many cores for training')
     parser.add_argument('-m', '--n_cpu_data', type=int, required=False, default=1,
         help='How many cores for data loading')
+    parser.add_argument('-t', '--cutoff', type=float, required=False, default=4.0,
+        help='Descriptor cutoff')
+    parser.add_argument('-b', '--batch_size', type=int, required=False, default=1,
+        help='Batch size')
     parser.add_argument('-c', '--checkpoint', type=str, required=False, default=None,
                         help='If set training will be continued from checkpoint')
     
@@ -96,4 +98,6 @@ if __name__ == '__main__':
         activation= args.activation,
         n_cpu_train = args.n_cpu_train,
         n_cpu_data = args.n_cpu_data,
-        checkpoint = args.checkpoint)
+        cutoff = args.cutoff,
+        batch_size = args.batch_size,
+        checkpoint = args.checkpoint,)

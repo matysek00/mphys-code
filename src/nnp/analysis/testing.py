@@ -69,6 +69,43 @@ def get_schnet_energies(atoms: ase.Atoms,
     return energies, forces
 
 
+def get_schnet_data(
+        ref_traj: list, 
+        return_std: bool = False, 
+        single_model: bool = False,
+        dir_model: str = None,
+        models: spk.interfaces.SpkCalculator = None):    
+    
+    if models is None:
+        if single_model:
+            models = [get_calculator(dir_model)]
+        else:
+            models = load_model_commitee(dir_model)
+    
+    # Get energies and forces from schnet
+    data_schnet  = [get_schnet_energies(atoms, models) for atoms in ref_traj] 
+    energies_schnet = np.array(
+        [data_schnet[i][0] for i in range(len(data_schnet))])
+    forces_schnet = np.array(
+        [data_schnet[i][1] for i in range(len(data_schnet))])   
+    
+    # average over models
+    energies_schnet_mean = np.mean(energies_schnet, axis=1) 
+    forces_schnet_mean = np.mean(forces_schnet, axis=1)
+
+    if return_std:
+        energies_schnet_std = np.std(energies_schnet, axis=1) 
+        forces_schnet_std = np.std(forces_schnet, axis=1)
+        return energies_schnet_mean, forces_schnet_mean, energies_schnet_std, forces_schnet_std
+
+    return energies_schnet_mean,forces_schnet_mean
+
+def load_model_commitee(dir_model):
+    fmt_model = dir_model + 'train-{:03d}/best_inference_model'
+    fn_models = [fmt_model.format(i) for i in range(4)]
+    models = [get_calculator(fn_mod) for fn_mod in fn_models]
+    return models
+
 def seperation_energy(
     fn_data: str,
     dir_model: str,

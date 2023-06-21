@@ -13,9 +13,9 @@ import argparse
 from schnetpack.md.data import HDF5Loader
 
 
-def main_hdf5(fn_traj, fn_output, cm_frame=False, conversion=10.):
+def main_hdf5(fn_traj, fn_output, cm_frame=False, conversion=10., skip_initial=0):
     
-    data = [HDF5Loader(fn) for fn in fn_traj]
+    data = [HDF5Loader(fn, skip_initial=skip_initial) for fn in fn_traj]
     msd_C = nnp.analysis.structure_descriptors.get_msd(
         6, data, cm_frame=cm_frame, conversion=conversion)
     msd_H = nnp.analysis.structure_descriptors.get_msd(
@@ -53,10 +53,12 @@ if __name__ == '__main__':
                         help='Conversion to Angstroms')
     parser.add_argument('-d', '--hdf5', action='store_true',
                         help='Reading from HDF5 file')
+    parser.add_argument('-s', '--skip_initial', type = int, required=False, default=0,
+        help='Skip the first n frames.')
 
     args = parser.parse_args()
     if args.hdf5:
-        main_hdf5(args.fn_data, args.outfile, args.cm_frame, args.conversion)
+        main_hdf5(args.fn_data, args.outfile, args.cm_frame, args.conversion, args.skip_initial)
     
     else:
         if args.conversion != 10.:
